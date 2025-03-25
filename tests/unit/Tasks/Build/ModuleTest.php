@@ -15,6 +15,11 @@ class ModuleTest extends TestCase
     public function setUp(): void
     {
         $this->initTestTasksTrait();
+
+        if (!is_file(JPATH_BASE . '/test-weblinks/jorobo.ini')) {
+            $fs = new Filesystem();
+            $fs->copy(JPATH_BASE . '/test-weblinks/jorobo.dist.ini', JPATH_BASE . '/test-weblinks/jorobo.ini');
+        }
     }
 
     public function tearDown(): void
