@@ -25,7 +25,7 @@ class ComponentTest extends TestCase
 
     public function testBuildComponent()
     {
-        $result = $this->buildComponent(['base' => JPATH_BASE . '/test-weblinks'])
+        $result = $this->buildComponent('weblinks', ['base' => JPATH_BASE . '/test-weblinks'])
             ->run();
         $this->assertTrue($result->wasSuccessful(), $result->getMessage());
         $this->assertDirectoryExists(JPATH_BASE . '/test-weblinks/dist/weblinks-4.0.0/components/com_weblinks');
