@@ -27,7 +27,7 @@ class Extension extends Base
      */
     protected $params = null;
 
-    private $hasComponent = true;
+    private $hasComponents = true;
 
     private $hasModules = true;
 
@@ -67,8 +67,23 @@ class Extension extends Base
         $this->analyze();
 
         // Build component
-        if ($this->hasComponent) {
-            $this->buildComponent($this->params)->run();
+        if ($this->hasComponents) {
+            $path = $this->getSourceFolder() . "/administrator/components";
+
+            // Get every component
+            $dir = new \DirectoryIterator($path);
+
+            foreach ($dir as $component) {
+                if (
+                    $component->isDot()
+                    || substr($component->getFilename(), 0, 4) != 'com_'
+                    || !is_dir($path . '/' . $component->getFilename())
+                ) {
+                    continue;
+                }
+
+                $this->buildComponent(substr($component->getFilename(), 4), $this->params)->run();
+            }
         }
 
         // Frontend Modules
@@ -76,24 +91,20 @@ class Extension extends Base
             $path = $this->getSourceFolder() . "/modules";
 
             // Get every module
-            $hdl = opendir($path);
+            $dir = new \DirectoryIterator($path);
 
-            while ($entry = readdir($hdl)) {
-                // Only folders
-                $p = $path . "/" . $entry;
-
-                if ($entry[0] == '.') {
+            foreach ($dir as $module) {
+                if (
+                    $module->isDot()
+                    || substr($module->getFilename(), 0, 4) != 'mod_'
+                    || !is_dir($path . '/' . $module->getFilename())
+                ) {
                     continue;
                 }
 
-                if (is_dir($p)) {
-                    // Module folder
-                    $this->modules[] = $entry;
-                    $this->buildModule($entry, $this->params)->run();
-                }
+                $this->modules[] = $module->getFilename();
+                $this->buildModule($module->getFilename(), $this->params)->run();
             }
-
-            closedir($hdl);
         }
 
         // Backend Modules
@@ -103,24 +114,20 @@ class Extension extends Base
             $params['basepath'] = $path;
 
             // Get every module
-            $hdl = opendir($path);
+            $dir = new \DirectoryIterator($path);
 
-            while ($entry = readdir($hdl)) {
-                // Only folders
-                $p = $path . "/" . $entry;
-
-                if ($entry[0] == '.') {
+            foreach ($dir as $module) {
+                if (
+                    $module->isDot()
+                    || substr($module->getFilename(), 0, 4) != 'mod_'
+                    || !is_dir($path . '/' . $module->getFilename())
+                ) {
                     continue;
                 }
 
-                if (is_dir($p)) {
-                    // Module folder
-                    $this->adminModules[] = $entry;
-                    $this->buildModule($entry, $params)->run();
-                }
+                $this->adminModules[] = $module->getFilename();
+                $this->buildModule($module->getFilename(), $params)->run();
             }
-
-            closedir($hdl);
         }
 
         // Plugins

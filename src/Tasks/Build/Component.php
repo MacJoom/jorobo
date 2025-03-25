@@ -41,16 +41,18 @@ class Component extends Base
     /**
      * Initialize Build Task
      *
-     * @param   array  $params  The target directory
+     * @param   string  $name    The name of the component
+     * @param   array   $params  The target directory
      *
      * @since   1.0
      */
-    public function __construct($params)
+    public function __construct($name, $params)
     {
         parent::__construct($params);
 
         // Reset files - > new component
         $this->resetFiles();
+        $this->setExtensionName($name);
 
         $this->adminPath = $this->getSourceFolder() . "/administrator/components/com_" . $this->getExtensionName();
         $this->apiPath   = $this->getSourceFolder() . "/api/components/com_" . $this->getExtensionName();

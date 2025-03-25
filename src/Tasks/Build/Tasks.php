@@ -36,9 +36,9 @@ trait Tasks
      *
      * @since   1.0
      */
-    protected function buildComponent($params = [])
+    protected function buildComponent($name, $params = [])
     {
-        return $this->task(Component::class, $params);
+        return $this->task(Component::class, $name, $params);
     }
 
     /**

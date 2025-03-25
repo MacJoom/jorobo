@@ -73,6 +73,15 @@ abstract class JTask extends \Robo\Tasks implements TaskInterface, VerbosityThre
     protected $params = [];
 
     /**
+     * Name of the extension
+     *
+     * @var    string
+     *
+     * @since  1.0
+     */
+    protected $extension;
+
+    /**
      * Construct
      *
      * @param   array      $params  Opt params
@@ -86,7 +95,7 @@ abstract class JTask extends \Robo\Tasks implements TaskInterface, VerbosityThre
         $this->params['base'] = $this->params['base'] ?? \JPATH_BASE;
         $this->logger         = Robo::logger();
 
-        if (is_a($io, '\Robo\Symfony\ConsoleIO')) {
+        if (is_a($io, ConsoleIO::class)) {
             $this->io = $io;
         }
 
@@ -164,7 +173,23 @@ abstract class JTask extends \Robo\Tasks implements TaskInterface, VerbosityThre
      */
     public function getExtensionName()
     {
-        return strtolower($this->getJConfig()->extension);
+        if (is_null($this->extension)) {
+            $this->extension = strtolower($this->getJConfig()->extension);
+        }
+
+        return $this->extension;
+    }
+
+    /**
+     * Set the extension name
+     *
+     * @return  string
+     *
+     * @since   1.0
+     */
+    public function setExtensionName($name)
+    {
+        $this->extension = strtolower($name);
     }
 
     /**
