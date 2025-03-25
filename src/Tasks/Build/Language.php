@@ -184,6 +184,10 @@ class Language extends Base
         $path  = $this->getSourceFolder() . "/" . $dir;
         $files = [];
 
+        if (!is_dir($path)) {
+            return $files;
+        }
+
         $hdl = opendir($path);
 
         while ($entry = readdir($hdl)) {
