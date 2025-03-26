@@ -23,7 +23,7 @@ class BumpVersion extends JTask
     use \Robo\Task\Development\Tasks;
 
     /**
-     * Maps all parts of an extension into a Joomla! installation
+     * Bump the version of a Joomla extension
      *
      * @return  Result
      *

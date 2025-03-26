@@ -179,7 +179,7 @@ class File extends Base
      */
     private function createInstaller()
     {
-        $this->say("Creating component installer");
+        $this->printTaskInfo("Creating file installer");
 
         $adminFolder = $this->getBuildFolder() . "/administrator/components/com_" . $this->getExtensionName();
         $xmlFile     = $adminFolder . "/" . $this->getExtensionName() . ".xml";

@@ -44,10 +44,10 @@ class Module extends Base
         // Reset files - > new module
         $this->resetFiles();
 
-        $this->modName = $modName;
+        $this->modName = str_starts_with($modName, 'mod_') ? $modName : 'mod_' . $modName;
 
-        $this->source = $this->getSourceFolder() . "/modules/" . $modName;
-        $this->target = $this->getBuildFolder() . "/modules/" . $modName;
+        $this->source = $this->getSourceFolder() . "/modules/" . $this->modName;
+        $this->target = $this->getBuildFolder() . "/modules/" . $this->modName;
     }
 
     /**
