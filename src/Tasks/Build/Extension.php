@@ -189,7 +189,7 @@ class Extension extends Base
                 if (!is_file($p)) {
                     // Library folder
                     $this->libraries[] = $entry;
-                    $this->buildLibrary($entry, $this->params, $this->hasComponent)->run();
+                    $this->buildLibrary($entry, $this->params, $this->hasComponents)->run();
                 }
             }
 
@@ -257,12 +257,10 @@ class Extension extends Base
     private function analyze()
     {
         // Check if we have component, module, plugin etc.
-        if (
-            !file_exists($this->getSourceFolder() . "/administrator/components/com_" . $this->getExtensionName())
-            && !file_exists($this->getSourceFolder() . "/components/com_" . $this->getExtensionName())
-        ) {
-            $this->printTaskWarning("Extension has no component");
-            $this->hasComponent = false;
+        $folders = glob($this->getSourceFolder() . "/administrator/components/com_*", GLOB_ONLYDIR);
+
+        if (count($folders) === 0) {
+            $this->hasComponents = false;
         }
 
         if (file_exists($this->getSourceFolder() . "/administrator/modules")) {

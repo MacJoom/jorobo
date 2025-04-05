@@ -29,7 +29,7 @@ class Package extends Base
      */
     protected $target = null;
 
-    private $hasComponent = true;
+    private $hasComponents = true;
 
     private $hasModules = true;
 
@@ -73,8 +73,8 @@ class Package extends Base
         $this->_mkdir($this->params['base'] . '/dist/zips');
         $this->analyze();
 
-        if ($this->hasComponent) {
-            $this->createComponentZip();
+        if ($this->hasComponents) {
+            $this->createComponentZips();
         }
 
         if ($this->hasModules) {
@@ -150,12 +150,10 @@ class Package extends Base
     private function analyze()
     {
         // Check if we have component, module, plugin etc.
-        if (
-            !file_exists($this->current . "/administrator/components/com_" . $this->getExtensionName())
-            && !file_exists($this->current . "/components/com_" . $this->getExtensionName())
-        ) {
-            $this->printTaskInfo("Extension has no component");
-            $this->hasComponent = false;
+        $folders = glob($this->getSourceFolder() . "/administrator/components/com_*", GLOB_ONLYDIR);
+
+        if (count($folders) === 0) {
+            $this->hasComponents = false;
         }
 
         if (!file_exists($this->current . "/modules")) {
@@ -227,55 +225,126 @@ class Package extends Base
     /**
      * Create an installable zip file for a component
      *
-     * @TODO    implement possibility for multiple components (without duplicate content)
-     *
      * @return  void
      *
      * @since   1.0
      */
-    public function createComponentZip()
+    public function createComponentZips()
     {
-        $comZip              = new \ZipArchive();
-        $tmp_path            = '/dist/tmp/cbuild';
-        $componentScriptPath = $this->current . "/administrator/components/com_" . $this->getExtensionName() . "/script.php";
+        $folders = glob($this->getSourceFolder() . "/administrator/components/com_*", GLOB_ONLYDIR);
 
-        if (file_exists($this->params['base'] . $tmp_path)) {
-            $this->_deleteDir($this->params['base'] . $tmp_path);
+        foreach ($folders as $folder) {
+            $cname = basename($folder);
+            $this->printTaskInfo("Packaging Component " . $cname);
+            $comZip              = new \ZipArchive();
+            $tmp_path            = '/dist/tmp/cbuild';
+            $componentScriptPath = $this->current . "/administrator/components/" . $cname . "/script.php";
+
+            // Delete old build directory and create new one
+            if (file_exists($this->params['base'] . $tmp_path)) {
+                $this->taskFilesystemStack()
+                    ->setVerbosityThreshold(self::VERBOSITY_VERY_VERBOSE)
+                    ->remove($this->params['base'] . $tmp_path)
+                    ->run();
+            }
+
+            $this->taskFilesystemStack()
+                ->setVerbosityThreshold(self::VERBOSITY_VERY_VERBOSE)
+                ->mkdir($this->params['base'] . $tmp_path)
+                ->run();
+
+            // Copy code parts of component to build directory
+            $this->taskFilesystemStack()
+                ->setVerbosityThreshold(self::VERBOSITY_VERY_VERBOSE)
+                ->mirror($this->current . '/administrator/components/' . $cname, $this->params['base'] . $tmp_path . '/administrator/components/' . $cname)
+                ->run();
+
+            if (is_dir($this->current . '/components/' . $cname)) {
+                $this->taskFilesystemStack()
+                    ->setVerbosityThreshold(self::VERBOSITY_VERY_VERBOSE)
+                    ->mirror($this->current . '/components/' . $cname, $this->params['base'] . $tmp_path . '/components/' . $cname)
+                    ->run();
+            }
+
+            if (file_exists($this->current . '/api/components/' . $cname)) {
+                $this->taskFilesystemStack()
+                    ->setVerbosityThreshold(self::VERBOSITY_VERY_VERBOSE)
+                    ->mirror($this->current . '/api/components/' . $cname, $this->params['base'] . $tmp_path . '/api/components/' . $cname)
+                    ->run();
+            }
+
+            // Copy language files from front- and backend
+            $backendLanguage = glob($this->getSourceFolder() . '/administrator/language/*/' . $cname . '.ini');
+
+            if (count($backendLanguage) > 0) {
+                foreach ($backendLanguage as $language) {
+                    $lng = basename(dirname($language));
+
+                    if (file_exists($this->getSourceFolder() . '/administrator/language/' . $lng . '/' . $cname . '.ini')) {
+                        $this->taskFilesystemStack()
+                            ->setVerbosityThreshold(self::VERBOSITY_VERY_VERBOSE)
+                            ->copy(
+                                $this->getSourceFolder() . '/administrator/language/' . $lng . '/' . $cname . '.ini',
+                                $this->params['base'] . $tmp_path . '/administrator/language/' . $lng . '/' . $cname . '.ini'
+                            )
+                            ->run();
+                    }
+
+                    if (file_exists($this->getSourceFolder() . '/administrator/language/' . $lng . '/' . $cname . '.sys.ini')) {
+                        $this->taskFilesystemStack()
+                            ->setVerbosityThreshold(self::VERBOSITY_VERY_VERBOSE)
+                            ->copy(
+                                $this->getSourceFolder() . '/administrator/language/' . $lng . '/' . $cname . '.sys.ini',
+                                $this->params['base'] . $tmp_path . '/administrator/language/' . $lng . '/' . $cname . '.sys.ini'
+                            )
+                            ->run();
+                    }
+                }
+            }
+
+            $frontendLanguage = glob($this->getSourceFolder() . '/language/*/' . $cname . '.ini');
+
+            if (count($frontendLanguage) > 0) {
+                foreach ($frontendLanguage as $language) {
+                    $lng = basename(dirname($language));
+
+                    if (file_exists($this->getSourceFolder() . '/language/' . $lng . '/' . $cname . '.ini')) {
+                        $this->taskFilesystemStack()
+                            ->setVerbosityThreshold(self::VERBOSITY_VERY_VERBOSE)
+                            ->copy(
+                                $this->getSourceFolder() . '/language/' . $lng . '/' . $cname . '.ini',
+                                $this->params['base'] . $tmp_path . '/language/' . $lng . '/' . $cname . '.ini'
+                            )
+                            ->run();
+                    }
+                }
+            }
+
+            // Copy media files
+            if (file_exists($this->current . '/media/' . $cname)) {
+                $this->taskFilesystemStack()
+                    ->setVerbosityThreshold(self::VERBOSITY_VERY_VERBOSE)
+                    ->mirror($this->current . '/media/' . $cname, $this->params['base'] . $tmp_path . '/media/' . $cname)
+                    ->run();
+            }
+
+            $comZip->open($this->params['base'] . '/dist/zips/' . $cname . '.zip', \ZipArchive::CREATE);
+
+            // Process the files to zip
+            $this->addFiles($comZip, $this->params['base'] . $tmp_path);
+
+            $comZip->addFile(
+                $this->current . "/" . substr($cname, 4) . ".xml",
+                substr($cname, 4) . ".xml"
+            );
+
+            if (file_exists($componentScriptPath)) {
+                $comZip->addFile($componentScriptPath, "script.php");
+            }
+
+            // Close the zip archive
+            $comZip->close();
         }
-
-        // Improve, should been a whitelist instead of a hardcoded copy
-        $this->_mkdir($this->params['base'] . $tmp_path);
-
-        $this->_copyDir($this->current . '/administrator', $this->params['base'] . $tmp_path . '/administrator');
-        $this->_remove($this->params['base'] . $tmp_path . '/administrator/manifests');
-
-        if (file_exists($this->current . '/language')) {
-            $this->_copyDir($this->current . '/language', $this->params['base'] . $tmp_path . '/language');
-        }
-
-        $this->_copyDir($this->current . '/components', $this->params['base'] . $tmp_path . '/components');
-
-        if (file_exists($this->current . '/api')) {
-            $this->_copyDir($this->current . '/api', $this->params['base'] . $tmp_path . '/api');
-        }
-
-        if (file_exists($this->current . '/media')) {
-            $this->_copyDir($this->current . '/media', $this->params['base'] . $tmp_path . '/media');
-        }
-
-        $comZip->open($this->params['base'] . '/dist/zips/com_' . $this->getExtensionName() . '.zip', \ZipArchive::CREATE);
-
-        // Process the files to zip
-        $this->addFiles($comZip, $this->params['base'] . $tmp_path);
-
-        $comZip->addFile($this->current . "/" . $this->getExtensionName() . ".xml", $this->getExtensionName() . ".xml");
-
-        if (file_exists($componentScriptPath)) {
-            $comZip->addFile($componentScriptPath, "script.php");
-        }
-
-        // Close the zip archive
-        $comZip->close();
     }
 
     /**
