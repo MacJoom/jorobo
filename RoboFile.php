@@ -7,7 +7,9 @@
  * @license    GNU General Public License version 2 or later; see LICENSE.txt
  */
 
+use Joomla\Jorobo\Tasks\AssetJSON;
 use Joomla\Jorobo\Tasks\Tasks;
+use Robo\Collection\CollectionBuilder;
 use Robo\Symfony\ConsoleIO;
 
 if (!defined('JPATH_BASE')) {
@@ -152,5 +154,20 @@ class RoboFile extends \Robo\Tasks
     public function bump($params = ['base' => JPATH_BASE])
     {
         $this->task(\Joomla\Jorobo\Tasks\BumpVersion::class, $params)->run();
+    }
+
+    /**
+     * Generate joomla.asset.json files
+     *
+     * @return  void
+     * @since   __DEPLOY_VERSION__
+     */
+    public function assetJSON()
+    {
+        if (!file_exists('jorobo.ini')) {
+            $this->_copy('jorobo.dist.ini', 'jorobo.ini');
+        }
+
+        $this->task(\Joomla\Jorobo\Tasks\AssetJSON::class)->run();
     }
 }

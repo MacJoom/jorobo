@@ -49,6 +49,7 @@ class RoboFile extends Tasks
      * @param   array  $params  Additional params
      *
      * @return  void
+     * @since   __DEPLOY_VERSION__
      */
     public function build($params = ['dev' => false])
     {
@@ -63,6 +64,7 @@ class RoboFile extends Tasks
      * Update copyright headers for this project. (Set the text up in the jorobo.ini)
      *
      * @return  void
+     * @since   __DEPLOY_VERSION__
      */
     public function headers()
     {
@@ -77,6 +79,7 @@ class RoboFile extends Tasks
      * Update Version __DEPLOY_VERSION__ in Component. (Set the version up in the jorobo.ini)
      *
      * @return  void
+     * @since   __DEPLOY_VERSION__
      */
     public function bump()
     {
@@ -89,11 +92,26 @@ class RoboFile extends Tasks
      * @param   String  $target  The target joomla instance
      *
      * @return  void
-     * @since __DEPLOY_VERSION__
+     * @since   __DEPLOY_VERSION__
      *
      */
     public function map($target)
     {
         $this->task(\Joomla\Jorobo\Tasks\Map::class, $target)->run();
+    }
+
+    /**
+     * Generate joomla.asset.json files
+     *
+     * @return  void
+     * @since   __DEPLOY_VERSION__
+     */
+    public function assetJSON()
+    {
+        if (!file_exists('jorobo.ini')) {
+            $this->_copy('jorobo.dist.ini', 'jorobo.ini');
+        }
+
+        $this->task(\Joomla\Jorobo\Tasks\AssetJSON::class)->run();
     }
 }

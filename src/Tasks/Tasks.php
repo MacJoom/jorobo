@@ -72,6 +72,8 @@ trait Tasks
     /**
      * Bump the __DEPLOY_VERSION__ task
      *
+     * @param   array  $params  Opt params
+     *                          *
      * @return  CollectionBuilder
      *
      * @since   1.0
@@ -79,5 +81,17 @@ trait Tasks
     protected function taskBumpVersion($params = [])
     {
         return $this->task(BumpVersion::class, $params);
+    }
+
+    /**
+     * Generate joomla.asset.json files
+     *
+     * @param $params
+     *
+     * @return CollectionBuilder
+     */
+    protected function taskGenerateAssetJSON($params = [])
+    {
+        return $this->task(AssetJSON::class, $params);
     }
 }
