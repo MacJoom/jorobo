@@ -44,106 +44,8 @@ class AssetJSON extends JTask
             if (file_exists($folder . '/joomla.asset.json')) {
                 $this->printTaskInfo('Updating joomla.asset.json for ' . $extension);
                 $assetFile = json_decode(file_get_contents($folder . '/joomla.asset.json'));
-
-                if (is_dir($folder . '/js')) {
-                    $jsFiles = glob($folder . '/js/*.js');
-
-                    foreach ($jsFiles as $jsFile) {
-                        if (str_ends_with($jsFile, '.min.js') && file_exists(str_replace('.min.js', '.js', $jsFile))) {
-                            continue;
-                        }
-
-                        $name = str_replace(['.min.js', '.js'], '', basename($jsFile));
-
-                        $found = false;
-                        foreach ($assetFile->assets as $asset) {
-                            if ($asset->type == 'script' && $asset->name == $extension . '.' . $name) {
-                                $found = true;
-                                break;
-                            }
-                        }
-
-                        if (!$found) {
-                            $entry               = new \stdClass();
-                            $entry->name         = $extension . '.' . $name;
-                            $entry->type         = 'script';
-                            $uri = $extension . '/' . basename($jsFile);
-                            if (!str_ends_with($entry->name, '.min.js') && file_exists(substr($jsFile, 0, -3) . '.min.js')) {
-                                $uri = $extension . '/' . substr(basename($jsFile), 0, -3) . '.min.js';
-                            }
-                            $entry->uri          = $uri;
-                            $entry->dependencies = [];
-                            $entry->attributes   = (object)['type' => 'module'];
-                            $assetFile->assets[] = $entry;
-                        }
-                    }
-                }
-
-                if (is_dir($folder . '/css')) {
-                    $cssFiles = glob($folder . '/css/*.css');
-
-                    foreach ($cssFiles as $cssFile) {
-                        if (str_ends_with($cssFile, '.min.css') && file_exists(str_replace('.min.css', '.css', $cssFile))) {
-                            continue;
-                        }
-
-                        $name = str_replace(['.min.css', '.css'], '', basename($cssFile));
-
-                        $found = false;
-                        foreach ($assetFile->assets as $asset) {
-                            if ($asset->type == 'style' && $asset->name == $extension . '.' . $name) {
-                                $found = true;
-                                break;
-                            }
-                        }
-                        if (!$found) {
-                            $entry       = new \stdClass();
-                            $entry->name = $extension . '.' . $name;
-                            $entry->type = 'style';
-                            $uri = $extension . '/' . basename($cssFile);
-                            if (!str_ends_with($entry->name, '.min.css') && file_exists(substr($cssFile, 0, -4) . '.min.css')) {
-                                $uri = $extension . '/' . substr(basename($cssFile), 0, -4) . '.min.css';
-                            }
-                            $entry->uri          = $uri;
-                            $assetFile->assets[] = $entry;
-                        }
-                    }
-                }
-
             } else {
                 $this->printTaskInfo('Generating joomla.asset.json for ' . $extension);
-
-                $assets = [];
-
-                if (is_dir($folder . '/js')) {
-                    $jsFiles = glob($folder . '/js/*.js');
-
-                    foreach ($jsFiles as $jsFile) {
-                        if (str_ends_with($jsFile, '.min.js')) {
-                            $entry               = new \stdClass();
-                            $entry->name         = $extension . '.' . substr(basename($jsFile), 0, -7);
-                            $entry->type         = 'script';
-                            $entry->uri          = $extension . '/' . basename($jsFile);
-                            $entry->dependencies = [];
-                            $entry->attributes   = (object)['type' => 'module'];
-                            $assets[]            = $entry;
-                        }
-                    }
-                }
-
-                if (is_dir($folder . '/css')) {
-                    $cssFiles = glob($folder . '/css/*.css');
-
-                    foreach ($cssFiles as $cssFile) {
-                        if (str_ends_with($cssFile, '.min.css')) {
-                            $entry       = new \stdClass();
-                            $entry->name = $extension . '.' . substr(basename($cssFile), 0, -8);
-                            $entry->type = 'style';
-                            $entry->uri  = $extension . '/' . basename($cssFile);
-                            $assets[]    = $entry;
-                        }
-                    }
-                }
 
                 $assetFile              = new \stdClass();
                 $assetFile->{'$schema'} = 'https://developer.joomla.org/schemas/json-schema/web_assets.json';
@@ -151,7 +53,49 @@ class AssetJSON extends JTask
                 $assetFile->version     = $this->getJConfig()->version;
                 $assetFile->description = '';
                 $assetFile->license     = 'GPL-2.0-or-later';
-                $assetFile->assets      = $assets;
+                $assetFile->assets      = [];
+            }
+
+            foreach (['js', 'css'] as $type) {
+                if (is_dir($folder . '/' . $type)) {
+                    $files = glob($folder . '/' . $type . '/*.' . $type);
+
+                    foreach ($files as $file) {
+                        if (str_ends_with($file, '.min.' . $type) && file_exists(str_replace('.min.' . $type, '.' . $type, $file))) {
+                            continue;
+                        }
+
+                        $name = str_replace(['.min.' . $type, '.' . $type], '', basename($file));
+
+                        $found = false;
+                        foreach ($assetFile->assets as $asset) {
+                            if ($asset->type == ($type == 'js' ? 'script' : 'style') && $asset->name == $extension . '.' . $name) {
+                                $found = true;
+                                break;
+                            }
+                        }
+
+                        if (!$found) {
+                            $entry = new \stdClass();
+                            $entry->name = $extension . '.' . $name;
+                            $entry->type = $type == 'js' ? 'script' : 'style';
+                            $uri = $extension . '/' . basename($file);
+
+                            if (!str_ends_with($entry->name, '.min.' . $type) && file_exists(substr($file, 0, -(strlen($type) + 1)) . '.min.' . $type)) {
+                                $uri = $extension . '/' . substr(basename($file),0, -(strlen($type) + 1)) . '.min.' . $type;
+                            }
+
+                            $entry->uri = $uri;
+
+                            if ($type == 'js') {
+                                $entry->dependencies = [];
+                                $entry->attributes   = (object)['type' => 'module'];
+                            }
+
+                            $assetFile->assets[] = $entry;
+                        }
+                    }
+                }
             }
 
             file_put_contents($folder . '/joomla.asset.json', json_encode($assetFile, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
